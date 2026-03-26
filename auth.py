@@ -1,9 +1,11 @@
+import pickle
 from google_auth_oauthlib.flow import InstalledAppFlow
+import os
 
 
-async def defineScope():
+def getCredentials(credsPath):
     return InstalledAppFlow.from_client_secrets_file(
-        "credentials.json",
+        credsPath,
         scopes=[
             "openid",
             "https://www.googleapis.com/auth/gmail.modify",
@@ -11,13 +13,16 @@ async def defineScope():
         ],
     )
 
+def checkToken():
+    creds = None
+    if os.path.exists("token.pickle"):
+        with open("token.pickle", "rb") as token:
+            creds = pickle.load(token)
+    else:
+        flow = getCredentials("credentials.json")
+        creds = flow.run_local_server()
+        with open("token.pickle", "wb") as token:
+            pickle.dump(creds, token)
+    
 
-async def openLocalServer(flow):
-    flow.run_local_server()
-    return flow.authorized_session()
-
-
-profile_info = session.get("https://www.googleapis.com/userinfo/v2/me").json()
-
-
-print(profile_info)
+checkToken()
