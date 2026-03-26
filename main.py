@@ -1,5 +1,7 @@
+from auth import checkToken
+
 def main():
-    print("Hello from gmanagr!")
+    checkToken()
 
 
 if __name__ == "__main__":
