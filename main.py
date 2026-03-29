@@ -1,5 +1,6 @@
 from auth import checkToken
 
+
 def main():
     checkToken()
 

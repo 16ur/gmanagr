@@ -13,6 +13,7 @@ def getCredentials(credsPath):
         ],
     )
 
+
 def checkToken():
     creds = None
     if os.path.exists("token.pickle"):
@@ -27,4 +28,3 @@ def checkToken():
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
     return creds
-    
