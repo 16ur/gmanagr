@@ -1,5 +1,4 @@
 from googleapiclient.discovery import build
-from auth import checkToken
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 
@@ -51,7 +50,9 @@ class GmailClient:
             from_raw = next(
                 (h["value"] for h in headers if h["name"] == "From"), "Unknown"
             )
-            date_raw = next(h["value"] for h in headers if h["name"] == "Date")
+            date_raw = next(
+                (h["value"] for h in headers if h["name"] == "Date"), "No date"
+            )
 
             labels_value = response["labelIds"]
             is_unread = "UNREAD" in labels_value
@@ -76,14 +77,24 @@ class GmailClient:
     def apply_label(self, mail_id, label_id):
         body = {"addLabelIds": [label_id]}
         response = (
-            self.service.users().messages().modify(userId="me", id=mail_id, body=body).execute()
+            self.service.users()
+            .messages()
+            .modify(userId="me", id=mail_id, body=body)
+            .execute()
         )
         return response
 
+    def create_filter(self, sender_email, label_id):
+        body = {
+            "criteria": {"from": sender_email},
+            "action": {"addLabelIds": [label_id], "removeLabelIds": ["INBOX"]},
+        }
+        response = (
+            self.service.users()
+            .settings()
+            .filters()
+            .create(userId="me", body=body)
+            .execute()
+        )
 
-creds = checkToken()
-client = GmailClient(creds)
-# print(client.get_labels())
-# print(client.get_messages(days=1))
-# client.create_label("label_test")
-client.apply_label("ID", "Label_3")
+        return response

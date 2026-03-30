@@ -1,8 +1,10 @@
 from auth import checkToken
+from gmail_client import GmailClient
 
 
 def main():
-    checkToken()
+    creds = checkToken()
+    GmailClient(creds)
 
 
 if __name__ == "__main__":
