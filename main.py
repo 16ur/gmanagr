@@ -1,5 +1,5 @@
-from auth import checkToken
-from gmail_client import GmailClient
+from gmanagr.auth import checkToken
+from gmanagr.gmail_client import GmailClient
 
 
 def main():
