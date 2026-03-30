@@ -65,13 +65,25 @@ class GmailClient:
             )
             mails.append(email)
         return mails
-            
+
     def create_label(self, name):
         body = {"name": name}
-        response = self.service.users().labels().create(userId="me", body=body).execute()
-        return response 
+        response = (
+            self.service.users().labels().create(userId="me", body=body).execute()
+        )
+        return response
+
+    def apply_label(self, mail_id, label_id):
+        body = {"addLabelIds": [label_id]}
+        response = (
+            self.service.users().messages().modify(userId="me", id=mail_id, body=body).execute()
+        )
+        return response
+
 
 creds = checkToken()
 client = GmailClient(creds)
+# print(client.get_labels())
 # print(client.get_messages(days=1))
-client.create_label("Label Test")
+# client.create_label("label_test")
+client.apply_label("ID", "Label_3")
