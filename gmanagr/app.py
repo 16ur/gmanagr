@@ -1,26 +1,61 @@
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, DataTable
+from textual.widgets import Footer, Header, DataTable, ListView, ListItem, Label
+from textual.screen import ModalScreen
 from gmanagr.auth import checkToken
-from gmanagr.gmail_client import GmailClient, Email
+from gmanagr.gmail_client import GmailClient
 
 
 class Gmanagr(App):
     THEME = "catppuccin-mocha"
-    BINDINGS = [("d", "toggle_dark", "change theme")]
-    
+    BINDINGS = [
+        ("d", "toggle_dark", "change theme"),
+        ("x", "label_email", "label email"),
+    ]
+
     async def on_mount(self) -> None:
         self.theme = "catppuccin-mocha"
         table = self.query_one(DataTable)
         table.add_columns("Date", "From", "Subject")
-        
+
         creds = checkToken()
-        client = GmailClient(creds)
-        mails = client.get_messages(1)
-        
-        for mail in mails:
+        self.client = GmailClient(creds)
+        self.mails = self.client.get_messages(1)
+
+        for mail in self.mails:
             table.add_row(mail.date, mail.from_raw, mail.subject)
-    
+
     def compose(self) -> ComposeResult:
         yield Header()
         yield Footer()
         yield DataTable()
+
+    def action_label_email(self):
+        table = self.query_one(DataTable)
+        row_index = table.cursor_row
+        self.selected_email = self.mails[row_index]
+        labels = self.client.get_labels()
+        self.push_screen(LabelSelectScreen(labels), callback=self._on_label_selected)
+
+    def _on_label_selected(self, result):
+        if result is None:
+            return
+
+
+class LabelSelectScreen(ModalScreen):
+    def __init__(self, labels):
+        super().__init__()
+        self.labels = labels
+
+    def compose(self):
+        yield ListView(
+            *[
+                ListItem(Label(label["name"]), id=f"label-{label['id']}")
+                for label in self.labels
+            ]
+        )
+
+    def on_list_view_selected(self, event: ListView.Selected):
+        item_id = event.item.id
+        label_id = item_id.replace("label-", "", 1)
+        label = next(l for l in self.labels if l["id"] == label_id)
+        self.dismiss(label)
