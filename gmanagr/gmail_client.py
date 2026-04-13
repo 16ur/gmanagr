@@ -1,20 +1,8 @@
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from dataclasses import dataclass
 
-
-def parse_date(date_raw: str) -> str:
-    formats = [
-        "%a, %d %b %Y %H:%M:%S %z",   # +0000
-        "%a, %d %b %Y %H:%M:%S %Z",   # GMT, UTC, etc..
-        "%d %b %Y %H:%M:%S %z",       # without day
-    ]
-    for fmt in formats:
-        try:
-            return datetime.strptime(date_raw, fmt).strftime("%d %b %H:%M")
-        except ValueError:
-            continue
-    return date_raw[:16]
 
 @dataclass
 class Email:
@@ -66,10 +54,11 @@ class GmailClient:
             date_raw = next(
                 (h["value"] for h in headers if h["name"] == "Date"), "No date"
             )
-            
             # Format the date
-            date_formatted = parse_date(date_raw)
-            
+            local_time = (
+                parsedate_to_datetime(date_raw).astimezone().strftime("%Y-%m-%d %H:%M")
+            )
+
             labels_value = response["labelIds"]
             is_unread = "UNREAD" in labels_value
 
@@ -77,7 +66,7 @@ class GmailClient:
                 id=mail_id,
                 subject=subject,
                 from_raw=from_raw,
-                date=date_formatted,
+                date=local_time,
                 is_unread=is_unread,
             )
             mails.append(email)
