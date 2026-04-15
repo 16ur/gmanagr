@@ -2,6 +2,7 @@ from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from dataclasses import dataclass
+import re
 
 
 @dataclass
@@ -80,7 +81,10 @@ class GmailClient:
         return response
 
     def apply_label(self, mail_id, label_id):
-        body = {"addLabelIds": [label_id]}
+        body = {
+            "addLabelIds": [label_id],
+            "removeLabelIds": ["INBOX"],  # remove the mail from the inbox
+        }
         response = (
             self.service.users()
             .messages()
@@ -103,3 +107,9 @@ class GmailClient:
         )
 
         return response
+
+    def get_from_email(self, from_raw):
+        match = re.search(r"<(.+?)>", from_raw)
+        if match:
+            return match.group(1)
+        return from_raw

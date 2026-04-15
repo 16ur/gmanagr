@@ -36,9 +36,20 @@ class Gmanagr(App):
         labels = self.client.get_labels()
         self.push_screen(LabelSelectScreen(labels), callback=self._on_label_selected)
 
+    def refresh_emails(self):
+        table = self.query_one(DataTable)
+        table.clear()
+        self.mails = self.client.get_messages(1)
+        for mail in self.mails:
+            table.add_row(mail.date, mail.from_raw, mail.subject)
+
     def _on_label_selected(self, result):
         if result is None:
             return
+        self.client.apply_label(self.selected_email.id, result["id"])
+        from_email = self.client.get_from_email(self.selected_email.from_raw)
+        self.client.create_filter(from_email, result["id"])
+        self.refresh_emails()
 
 
 class LabelSelectScreen(ModalScreen):
