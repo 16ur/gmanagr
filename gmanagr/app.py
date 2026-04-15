@@ -15,14 +15,18 @@ class Gmanagr(App):
     async def on_mount(self) -> None:
         self.theme = "catppuccin-mocha"
         table = self.query_one(DataTable)
-        table.add_columns("Date", "From", "Subject")
+        table.add_column("Date", width=20)
+        table.add_column("From", width=25)
+        table.add_column("Subject", width=40)
 
         creds = checkToken()
         self.client = GmailClient(creds)
         self.mails = self.client.get_messages(1)
 
         for mail in self.mails:
-            table.add_row(mail.date, mail.from_raw, mail.subject)
+            table.add_row(
+                mail.date, self.client.get_from_email(mail.from_raw), mail.subject
+            )
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -68,5 +72,5 @@ class LabelSelectScreen(ModalScreen):
     def on_list_view_selected(self, event: ListView.Selected):
         item_id = event.item.id
         label_id = item_id.replace("label-", "", 1)
-        label = next(l for l in self.labels if l["id"] == label_id)
+        label = next(label for label in self.labels if label["id"] == label_id)
         self.dismiss(label)
