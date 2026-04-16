@@ -1,14 +1,9 @@
-from gmanagr.auth import checkToken
-from gmanagr.gmail_client import GmailClient
-from gmanagr.app import Gmanagr
+from gmanagr.ui.app import Gmanagr
 
 
 def main():
-    creds = checkToken()
-    GmailClient(creds)
+    Gmanagr().run()
 
 
 if __name__ == "__main__":
     main()
-    app = Gmanagr()
-    app.run()

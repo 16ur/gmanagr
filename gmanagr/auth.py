@@ -1,30 +1,30 @@
 import pickle
-from google_auth_oauthlib.flow import InstalledAppFlow
+from pathlib import Path
+
 from google.auth.transport.requests import Request
-import os
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+_PROJECT_ROOT = Path(__file__).parent.parent
+_CREDENTIALS_PATH = _PROJECT_ROOT / "credentials.json"
+_TOKEN_PATH = _PROJECT_ROOT / "token.pickle"
+
+_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.settings.basic",
+]
 
 
-def getCredentials(credsPath):
-    return InstalledAppFlow.from_client_secrets_file(
-        credsPath,
-        scopes=[
-            "https://www.googleapis.com/auth/gmail.modify",
-            "https://www.googleapis.com/auth/gmail.settings.basic",
-        ],
-    )
-
-
-def checkToken():
+def check_token():
     creds = None
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
+    if _TOKEN_PATH.exists():
+        with open(_TOKEN_PATH, "rb") as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = getCredentials("credentials.json")
+            flow = InstalledAppFlow.from_client_secrets_file(_CREDENTIALS_PATH, _SCOPES)
             creds = flow.run_local_server()
-        with open("token.pickle", "wb") as token:
+        with open(_TOKEN_PATH, "wb") as token:
             pickle.dump(creds, token)
     return creds

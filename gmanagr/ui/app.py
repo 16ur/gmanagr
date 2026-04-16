@@ -1,50 +1,13 @@
-from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container
 from textual.reactive import reactive
-from textual.screen import ModalScreen
-from textual.widgets import DataTable, Input, Label, ListItem, ListView, Static
-from gmanagr.auth import checkToken
+from textual.widgets import DataTable
+
+from gmanagr.auth import check_token
 from gmanagr.gmail_client import GmailClient
-
-
-def _row_cells(mail, from_email):
-    if mail.is_unread:
-        return (
-            Text(mail.date, style="bold"),
-            Text(from_email, style="bold"),
-            Text(mail.subject, style="bold"),
-        )
-    return (mail.date, from_email, mail.subject)
-
-
-class AppHeader(Horizontal):
-    unread_count = reactive(0)
-
-    def compose(self) -> ComposeResult:
-        yield Static("gmanagr", id="header-title")
-        yield Static("·", id="header-sep")
-        yield Static("Gmail manager", id="header-subtitle")
-        yield Static("", id="header-unread")
-
-    def watch_unread_count(self, count: int) -> None:
-        label = self.query_one("#header-unread", Static)
-        label.update(f"● {count} unread" if count > 0 else "")
-
-
-class AppFooter(Horizontal):
-    BINDINGS_INFO = [
-        ("x", "Label email"),
-        ("backspace", "Trash"),
-        ("t", "Time range"),
-        ("d", "Toggle theme"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        for key, desc in self.BINDINGS_INFO:
-            yield Static(key, classes="key-badge")
-            yield Static(desc, classes="key-desc")
+from gmanagr.ui.screens import ConfirmScreen, DaysInputScreen, LabelSelectScreen
+from gmanagr.ui.widgets import AppFooter, AppHeader, _row_cells
 
 
 class Gmanagr(App):
@@ -84,7 +47,7 @@ class Gmanagr(App):
 
     @work(thread=True)
     def _init_and_load(self) -> None:
-        creds = checkToken()
+        creds = check_token()
         self.client = GmailClient(creds)
         mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)
@@ -137,9 +100,8 @@ class Gmanagr(App):
             return
         table = self.query_one(DataTable)
         self.selected_email = self.mails[table.cursor_row]
-        subject = self.selected_email.subject
         self.push_screen(
-            ConfirmScreen(f'Move to trash?\n"{subject}"'),
+            ConfirmScreen(f'Move to trash?\n"{self.selected_email.subject}"'),
             callback=self._on_trash_confirmed,
         )
 
@@ -170,89 +132,3 @@ class Gmanagr(App):
     def _reload_emails(self) -> None:
         mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)
-
-
-class ConfirmScreen(ModalScreen):
-    BINDINGS = [
-        ("enter", "confirm", "Confirm"),
-        ("escape", "dismiss", "Cancel"),
-    ]
-
-    def __init__(self, message: str):
-        super().__init__()
-        self.message = message
-
-    def compose(self) -> ComposeResult:
-        panel = Static(self.message, id="confirm-message")
-        panel.border_title = "Confirm"
-        yield Vertical(
-            panel,
-            Static("↵ confirm  esc cancel", classes="modal-footer"),
-            id="confirm-wrapper",
-        )
-
-    def action_confirm(self) -> None:
-        self.dismiss(True)
-
-
-class DaysInputScreen(ModalScreen):
-    BINDINGS = [("escape", "dismiss", "Cancel")]
-
-    def __init__(self, current_days: int):
-        super().__init__()
-        self.current_days = current_days
-
-    def compose(self) -> ComposeResult:
-        inp = Input(
-            value=str(self.current_days),
-            placeholder="Number of days...",
-            id="days-input",
-        )
-        inp.border_title = "Time range"
-        yield Vertical(
-            inp,
-            Static("↵ confirm  esc cancel", classes="modal-footer"),
-            id="days-wrapper",
-        )
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        try:
-            days = int(event.value.strip())
-            if days > 0:
-                self.dismiss(days)
-        except ValueError:
-            pass
-
-
-class LabelSelectScreen(ModalScreen):
-    BINDINGS = [("escape", "dismiss", "Cancel")]
-
-    def __init__(self, labels):
-        super().__init__()
-        self.labels = labels
-
-    def compose(self) -> ComposeResult:
-        lv = ListView(
-            *[
-                ListItem(Label(label["name"]), id=f"label-{label['id']}")
-                for label in self.labels
-            ]
-        )
-        lv.border_title = "Select a label"
-        yield Vertical(
-            lv,
-            Input(placeholder="New label...", id="new-label-input"),
-            Static("tab create  esc cancel", classes="modal-footer"),
-            id="modal-wrapper",
-        )
-
-    def on_list_view_selected(self, event: ListView.Selected) -> None:
-        item_id = event.item.id
-        label_id = item_id.replace("label-", "", 1)
-        label = next(label for label in self.labels if label["id"] == label_id)
-        self.dismiss(label)
-
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        name = event.value.strip()
-        if name:
-            self.dismiss({"id": None, "name": name})
