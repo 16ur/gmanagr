@@ -1,20 +1,32 @@
 # gmanagr
 
-A terminal-based Gmail manager built with Python and Textual. Browse your recent emails, create labels, and set up automatic filters, all from your terminal.
+A keyboard-driven Gmail manager for the terminal.
 
 ## Features
 
-- Browse emails from the last N days
+- Browse inbox emails from the last N days (2 by default)
 - Apply labels to emails with a single keypress
+- Batch-apply labels to all inbox emails from the same sender at once
 - Automatically create a Gmail filter for the sender so future emails are sorted too
-- Create new labels on the fly from the interface
-- Persistent OAuth2 authentication (no need to log in every time)
+- Create new labels on the fly from the label picker
+- Move emails to trash with a confirmation prompt
+
+## Keybindings
+
+| Key | Action |
+|-----|--------|
+| `x` | Apply a label to the selected email |
+| `backspace` | Move the selected email to trash |
+| `t` | Change the time range |
+| `d` | Toggle theme |
+| `esc` | Close a modal |
 
 ## Tech Stack
 
+- **[Python 3.12](https://www.python.org/)**
 - **[Textual](https://textual.textualize.io/)** — TUI framework
 - **[Google Gmail API](https://developers.google.com/gmail/api)** — Gmail integration
-- **[uv](https://docs.astral.sh/uv/)** — Python package manager
+- **[uv](https://docs.astral.sh/uv/)** — package manager
 
 ## Prerequisites
 
@@ -40,9 +52,8 @@ This only needs to be done once.
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/gmanagr
+git clone https://github.com/16ur/gmanagr
 cd gmanagr
-
 uv sync
 ```
 
@@ -52,4 +63,28 @@ uv sync
 uv run main.py
 ```
 
-On first launch, a browser window will open for OAuth2 authentication. After that, the token is cached locally and you won't need to authenticate again.
+On first launch, a browser window will open for OAuth2 authentication. After that, the token is cached locally and re-used automatically.
+
+## License
+
+MIT License
+
+Copyright (c) 2026 16ur
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
