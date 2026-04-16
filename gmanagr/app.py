@@ -1,4 +1,5 @@
 from rich.text import Text
+from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
@@ -52,54 +53,66 @@ class Gmanagr(App):
         ("x", "label_email", "Label email"),
     ]
 
-    async def on_mount(self) -> None:
+    def compose(self) -> ComposeResult:
+        yield AppHeader()
+        yield Container(DataTable(), id="mail-panel")
+        yield AppFooter()
+
+    def on_mount(self) -> None:
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.add_column("Date", width=22)
         table.add_column("From", width=30)
         table.add_column("Subject", width=55)
 
-        creds = checkToken()
-        self.client = GmailClient(creds)
-        self.mails = self.client.get_messages(1)
-
-        for mail in self.mails:
-            table.add_row(*_row_cells(mail, self.client.get_from_email(mail.from_raw)))
-
         panel = self.query_one("#mail-panel")
         panel.border_title = "Inbox"
+        panel.loading = True
 
-        unread = sum(1 for m in self.mails if m.is_unread)
-        self.query_one(AppHeader).unread_count = unread
+        self._init_and_load()
 
-    def compose(self) -> ComposeResult:
-        yield AppHeader()
-        yield Container(DataTable(), id="mail-panel")
-        yield AppFooter()
+    @work(thread=True)
+    def _init_and_load(self) -> None:
+        creds = checkToken()
+        self.client = GmailClient(creds)
+        mails = self.client.get_messages(1)
+        self.call_from_thread(self._populate_table, mails)
 
-    def action_label_email(self) -> None:
-        table = self.query_one(DataTable)
-        row_index = table.cursor_row
-        self.selected_email = self.mails[row_index]
-        labels = self.client.get_labels()
-        self.push_screen(LabelSelectScreen(labels), callback=self._on_label_selected)
-
-    def refresh_emails(self) -> None:
+    def _populate_table(self, mails) -> None:
+        self.mails = mails
         table = self.query_one(DataTable)
         table.clear()
-        self.mails = self.client.get_messages(1)
-        for mail in self.mails:
+        for mail in mails:
             table.add_row(*_row_cells(mail, self.client.get_from_email(mail.from_raw)))
         unread = sum(1 for m in self.mails if m.is_unread)
         self.query_one(AppHeader).unread_count = unread
+        self.query_one("#mail-panel").loading = False
+
+    def action_label_email(self) -> None:
+        if not hasattr(self, "client") or not hasattr(self, "mails"):
+            return
+        table = self.query_one(DataTable)
+        self.selected_email = self.mails[table.cursor_row]
+        self._fetch_labels()
+
+    @work(thread=True)
+    def _fetch_labels(self) -> None:
+        labels = self.client.get_labels()
+        self.call_from_thread(self.push_screen, LabelSelectScreen(labels), self._on_label_selected)
 
     def _on_label_selected(self, result) -> None:
         if result is None:
             return
+        self.query_one("#mail-panel").loading = True
+        self._apply_and_refresh(result)
+
+    @work(thread=True)
+    def _apply_and_refresh(self, result) -> None:
         self.client.apply_label(self.selected_email.id, result["id"])
         from_email = self.client.get_from_email(self.selected_email.from_raw)
         self.client.create_filter(from_email, result["id"])
-        self.refresh_emails()
+        mails = self.client.get_messages(1)
+        self.call_from_thread(self._populate_table, mails)
 
 
 class LabelSelectScreen(ModalScreen):
