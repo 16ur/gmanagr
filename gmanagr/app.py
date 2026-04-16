@@ -1,8 +1,19 @@
+from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, DataTable, ListView, ListItem, Label
 from textual.screen import ModalScreen
 from gmanagr.auth import checkToken
 from gmanagr.gmail_client import GmailClient
+
+
+def _row_cells(mail, from_email):
+    if mail.is_unread:
+        return (
+            Text(mail.date, style="bold"),
+            Text(from_email, style="bold"),
+            Text(mail.subject, style="bold"),
+        )
+    return (mail.date, from_email, mail.subject)
 
 
 class Gmanagr(App):
@@ -24,9 +35,7 @@ class Gmanagr(App):
         self.mails = self.client.get_messages(1)
 
         for mail in self.mails:
-            table.add_row(
-                mail.date, self.client.get_from_email(mail.from_raw), mail.subject
-            )
+            table.add_row(*_row_cells(mail, self.client.get_from_email(mail.from_raw)))
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -45,7 +54,7 @@ class Gmanagr(App):
         table.clear()
         self.mails = self.client.get_messages(1)
         for mail in self.mails:
-            table.add_row(mail.date, mail.from_raw, mail.subject)
+            table.add_row(*_row_cells(mail, self.client.get_from_email(mail.from_raw)))
 
     def _on_label_selected(self, result):
         if result is None:
