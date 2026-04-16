@@ -121,8 +121,13 @@ class Gmanagr(App):
     def _apply_and_refresh(self, result) -> None:
         if result["id"] is None:
             result = self.client.create_label(result["name"])
-        self.client.apply_label(self.selected_email.id, result["id"])
         from_email = self.client.get_from_email(self.selected_email.from_raw)
+        same_sender = [
+            m for m in self.mails
+            if self.client.get_from_email(m.from_raw) == from_email
+        ]
+        for mail in same_sender:
+            self.client.apply_label(mail.id, result["id"])
         self.client.create_filter(from_email, result["id"])
         mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)

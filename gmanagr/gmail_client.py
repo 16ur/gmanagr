@@ -1,4 +1,5 @@
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from dataclasses import dataclass
@@ -101,15 +102,18 @@ class GmailClient:
             "criteria": {"from": sender_email},
             "action": {"addLabelIds": [label_id], "removeLabelIds": ["INBOX"]},
         }
-        response = (
-            self.service.users()
-            .settings()
-            .filters()
-            .create(userId="me", body=body)
-            .execute()
-        )
-
-        return response
+        try:
+            return (
+                self.service.users()
+                .settings()
+                .filters()
+                .create(userId="me", body=body)
+                .execute()
+            )
+        except HttpError as e:
+            if e.status_code == 400:
+                return None
+            raise
 
     def get_from_email(self, from_raw):
         match = re.search(r"<(.+?)>", from_raw)
