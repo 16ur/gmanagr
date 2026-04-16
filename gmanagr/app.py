@@ -4,7 +4,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widgets import DataTable, Label, ListItem, ListView, Static
+from textual.widgets import DataTable, Input, Label, ListItem, ListView, Static
 from gmanagr.auth import checkToken
 from gmanagr.gmail_client import GmailClient
 
@@ -108,6 +108,8 @@ class Gmanagr(App):
 
     @work(thread=True)
     def _apply_and_refresh(self, result) -> None:
+        if result["id"] is None:
+            result = self.client.create_label(result["name"])
         self.client.apply_label(self.selected_email.id, result["id"])
         from_email = self.client.get_from_email(self.selected_email.from_raw)
         self.client.create_filter(from_email, result["id"])
@@ -131,7 +133,10 @@ class LabelSelectScreen(ModalScreen):
         )
         lv.border_title = "Select a label"
         yield Vertical(
-            lv, Static("esc  cancel", classes="modal-footer"), id="modal-wrapper"
+            lv,
+            Input(placeholder="New label...", id="new-label-input"),
+            Static("tab create  esc cancel", classes="modal-footer"),
+            id="modal-wrapper",
         )
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
@@ -139,3 +144,8 @@ class LabelSelectScreen(ModalScreen):
         label_id = item_id.replace("label-", "", 1)
         label = next(label for label in self.labels if label["id"] == label_id)
         self.dismiss(label)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        name = event.value.strip()
+        if name:
+            self.dismiss({"id": None, "name": name})

@@ -112,6 +112,16 @@ LabelSelectScreen > ListView > ListItem.--highlight {
     color: $primary;
 }
 
+#new-label-input {
+    margin-top: 1;
+    border: solid $primary 30%;
+    background: $panel;
+}
+
+#new-label-input:focus {
+    border: solid $primary;
+}
+
 LabelSelectScreen > .modal-footer {
     height: 1;
     background: $panel;
