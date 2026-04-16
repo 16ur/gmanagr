@@ -36,6 +36,7 @@ class AppHeader(Horizontal):
 class AppFooter(Horizontal):
     BINDINGS_INFO = [
         ("x", "Label email"),
+        ("backspace", "Trash"),
         ("t", "Time range"),
         ("d", "Toggle theme"),
     ]
@@ -53,6 +54,7 @@ class Gmanagr(App):
         ("d", "toggle_dark", "Toggle theme"),
         ("x", "label_email", "Label email"),
         ("t", "change_days", "Time range"),
+        ("backspace", "trash_email", "Trash"),
     ]
 
     days = reactive(2)
@@ -125,6 +127,29 @@ class Gmanagr(App):
         mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)
 
+    def action_trash_email(self) -> None:
+        if not hasattr(self, "client") or not hasattr(self, "mails"):
+            return
+        table = self.query_one(DataTable)
+        self.selected_email = self.mails[table.cursor_row]
+        subject = self.selected_email.subject
+        self.push_screen(
+            ConfirmScreen(f'Move to trash?\n"{subject}"'),
+            callback=self._on_trash_confirmed,
+        )
+
+    def _on_trash_confirmed(self, confirmed: bool | None) -> None:
+        if not confirmed:
+            return
+        self.query_one("#mail-panel").loading = True
+        self._trash_and_reload()
+
+    @work(thread=True)
+    def _trash_and_reload(self) -> None:
+        self.client.trash_message(self.selected_email.id)
+        mails = self.client.get_messages(self.days)
+        self.call_from_thread(self._populate_table, mails)
+
     def action_change_days(self) -> None:
         self.push_screen(DaysInputScreen(self.days), callback=self._on_days_changed)
 
@@ -140,6 +165,29 @@ class Gmanagr(App):
     def _reload_emails(self) -> None:
         mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)
+
+
+class ConfirmScreen(ModalScreen):
+    BINDINGS = [
+        ("enter", "confirm", "Confirm"),
+        ("escape", "dismiss", "Cancel"),
+    ]
+
+    def __init__(self, message: str):
+        super().__init__()
+        self.message = message
+
+    def compose(self) -> ComposeResult:
+        panel = Static(self.message, id="confirm-message")
+        panel.border_title = "Confirm"
+        yield Vertical(
+            panel,
+            Static("↵ confirm  esc cancel", classes="modal-footer"),
+            id="confirm-wrapper",
+        )
+
+    def action_confirm(self) -> None:
+        self.dismiss(True)
 
 
 class DaysInputScreen(ModalScreen):

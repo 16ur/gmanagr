@@ -80,6 +80,9 @@ class GmailClient:
         )
         return response
 
+    def trash_message(self, mail_id):
+        return self.service.users().messages().trash(userId="me", id=mail_id).execute()
+
     def apply_label(self, mail_id, label_id):
         body = {
             "addLabelIds": [label_id],
