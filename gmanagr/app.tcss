@@ -82,6 +82,10 @@ DataTable > .datatable--hover {
     background: $surface;
 }
 
+DaysInputScreen {
+    align: center middle;
+}
+
 LabelSelectScreen {
     align: center middle;
 }
@@ -110,6 +114,20 @@ LabelSelectScreen > ListView > ListItem {
 LabelSelectScreen > ListView > ListItem.--highlight {
     background: $primary 15%;
     color: $primary;
+}
+
+#days-wrapper {
+    width: 40;
+    height: auto;
+}
+
+#days-input {
+    border: solid $primary 30%;
+    background: $panel;
+}
+
+#days-input:focus {
+    border: solid $primary;
 }
 
 #new-label-input {

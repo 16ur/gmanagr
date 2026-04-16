@@ -36,6 +36,7 @@ class AppHeader(Horizontal):
 class AppFooter(Horizontal):
     BINDINGS_INFO = [
         ("x", "Label email"),
+        ("t", "Time range"),
         ("d", "Toggle theme"),
     ]
 
@@ -51,7 +52,10 @@ class Gmanagr(App):
     BINDINGS = [
         ("d", "toggle_dark", "Toggle theme"),
         ("x", "label_email", "Label email"),
+        ("t", "change_days", "Time range"),
     ]
+
+    days = reactive(2)
 
     def compose(self) -> ComposeResult:
         yield AppHeader()
@@ -66,16 +70,21 @@ class Gmanagr(App):
         table.add_column("Subject", width=55)
 
         panel = self.query_one("#mail-panel")
-        panel.border_title = "Inbox"
         panel.loading = True
+        self._update_panel_title()
 
         self._init_and_load()
+
+    def _update_panel_title(self) -> None:
+        days = self.days
+        label = "day" if days == 1 else "days"
+        self.query_one("#mail-panel").border_title = f"Inbox — last {days} {label}"
 
     @work(thread=True)
     def _init_and_load(self) -> None:
         creds = checkToken()
         self.client = GmailClient(creds)
-        mails = self.client.get_messages(1)
+        mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)
 
     def _populate_table(self, mails) -> None:
@@ -113,8 +122,53 @@ class Gmanagr(App):
         self.client.apply_label(self.selected_email.id, result["id"])
         from_email = self.client.get_from_email(self.selected_email.from_raw)
         self.client.create_filter(from_email, result["id"])
-        mails = self.client.get_messages(1)
+        mails = self.client.get_messages(self.days)
         self.call_from_thread(self._populate_table, mails)
+
+    def action_change_days(self) -> None:
+        self.push_screen(DaysInputScreen(self.days), callback=self._on_days_changed)
+
+    def _on_days_changed(self, days: int | None) -> None:
+        if days is None:
+            return
+        self.days = days
+        self.query_one("#mail-panel").loading = True
+        self._update_panel_title()
+        self._reload_emails()
+
+    @work(thread=True)
+    def _reload_emails(self) -> None:
+        mails = self.client.get_messages(self.days)
+        self.call_from_thread(self._populate_table, mails)
+
+
+class DaysInputScreen(ModalScreen):
+    BINDINGS = [("escape", "dismiss", "Cancel")]
+
+    def __init__(self, current_days: int):
+        super().__init__()
+        self.current_days = current_days
+
+    def compose(self) -> ComposeResult:
+        inp = Input(
+            value=str(self.current_days),
+            placeholder="Number of days...",
+            id="days-input",
+        )
+        inp.border_title = "Time range"
+        yield Vertical(
+            inp,
+            Static("↵ confirm  esc cancel", classes="modal-footer"),
+            id="days-wrapper",
+        )
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        try:
+            days = int(event.value.strip())
+            if days > 0:
+                self.dismiss(days)
+        except ValueError:
+            pass
 
 
 class LabelSelectScreen(ModalScreen):
