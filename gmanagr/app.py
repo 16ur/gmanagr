@@ -1,6 +1,6 @@
 from rich.text import Text
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, Vertical
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widgets import DataTable, Label, ListItem, ListView, Static
@@ -103,6 +103,8 @@ class Gmanagr(App):
 
 
 class LabelSelectScreen(ModalScreen):
+    BINDINGS = [("escape", "dismiss", "Cancel")]
+
     def __init__(self, labels):
         super().__init__()
         self.labels = labels
@@ -115,7 +117,9 @@ class LabelSelectScreen(ModalScreen):
             ]
         )
         lv.border_title = "Select a label"
-        yield lv
+        yield Vertical(
+            lv, Static("esc  cancel", classes="modal-footer"), id="modal-wrapper"
+        )
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         item_id = event.item.id
