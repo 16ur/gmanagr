@@ -1,0 +1,108 @@
+AppHeader {
+    height: 3;
+    dock: top;
+    background: $panel;
+    border-bottom: solid $surface;
+    align: left middle;
+    padding: 0 2;
+}
+
+#header-title {
+    color: $primary;
+    text-style: bold;
+    width: auto;
+}
+
+#header-sep {
+    color: $text-muted;
+    width: auto;
+    padding: 0 1;
+}
+
+#header-subtitle {
+    color: $text-muted;
+    width: auto;
+}
+
+#header-unread {
+    dock: right;
+    width: auto;
+    color: $warning;
+    text-style: bold;
+}
+
+AppFooter {
+    height: 2;
+    dock: bottom;
+    background: $panel;
+    border-top: solid $surface;
+    align: left middle;
+    padding: 0 2;
+}
+
+.key-badge {
+    background: $surface;
+    color: $primary;
+    text-style: bold;
+    width: auto;
+    padding: 0 1;
+}
+
+.key-desc {
+    color: $text-muted;
+    width: auto;
+    margin: 0 3 0 1;
+}
+
+#mail-panel {
+    border: solid $primary 30%;
+    border-title-color: $primary;
+    border-title-style: bold;
+    border-title-align: left;
+    margin: 1 2;
+    height: 1fr;
+}
+
+DataTable {
+    height: 1fr;
+}
+
+DataTable > .datatable--header {
+    background: $panel;
+    color: $primary;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: $primary 15%;
+    color: $text;
+}
+
+DataTable > .datatable--hover {
+    background: $surface;
+}
+
+LabelSelectScreen {
+    align: center middle;
+}
+
+LabelSelectScreen > ListView {
+    width: 52;
+    height: auto;
+    max-height: 22;
+    border: solid $primary 30%;
+    border-title-color: $primary;
+    border-title-style: bold;
+    background: $panel;
+    padding: 0 1;
+}
+
+LabelSelectScreen > ListView > ListItem {
+    padding: 0 1;
+    color: $text;
+}
+
+LabelSelectScreen > ListView > ListItem.--highlight {
+    background: $primary 15%;
+    color: $primary;
+}
