@@ -13,3 +13,5 @@ dependencies = [
     "textual-dev>=1.8.0",
     "ty>=0.0.26",
 ]
+[project.scripts]
+gmanagr = "gmanagr.main:main"
